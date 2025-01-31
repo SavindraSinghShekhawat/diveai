@@ -3,6 +3,7 @@ from IPython.display import display
 from IPython import get_ipython
 import sys
 from itertools import cycle
+import numpy as np
 
 def is_jupyter_environment():
     """
@@ -41,7 +42,7 @@ class PlotBuilder:
         self.fig = go.Figure()
         self.set_labels(x_label=x_label, y_label=y_label, z_label=z_label, title=title)
     
-    def add_plot(self, x, y, z=None, plot_type="line", color=None, label=None, opacity=1, size=5, colorscale="Reds"):
+    def add_plot(self, x, y, z=None, plot_type="line", color=None, label=None, opacity=1, size=5, colorscale="Reds", marker_symbol=None):
         """
         Adds a 2D or 3D plot to the figure based on the provided data.
         :param x: x-coordinates.
@@ -75,7 +76,7 @@ class PlotBuilder:
             else:
                 trace = go.Scatter(x=x, y=y, mode='lines' if plot_type == "line" else 'markers',
                                    name=label, line=dict(color=color) if plot_type == "line" else dict(),
-                                   marker=dict(color=color, size=size, opacity=opacity))
+                                   marker=dict(color=color, size=size, opacity=opacity), marker_symbol=marker_symbol)
         
         self.fig.add_trace(trace)
     
@@ -138,3 +139,64 @@ class PlotBuilder:
 
         else:
             self.fig.show()
+
+
+class HeatmapPlotBuilder(PlotBuilder):
+    """
+    Specialized PlotBuilder for heatmap visualizations with confusion matrix support
+    Maintains all original functionality while adding heatmap-specific features
+    """
+    
+    def __init__(self, x_label="Predicted", y_label="Actual", title=None, 
+                colorscale='Blues', show_scale=False):
+        super().__init__(x_label=x_label, y_label=y_label, title=title)
+        self.colorscale = colorscale
+        self.show_scale = show_scale
+        self._configure_layout()
+
+    def _configure_layout(self):
+        """Heatmap-specific layout configuration"""
+        self.fig.update_layout(
+            yaxis_autorange='reversed',
+            plot_bgcolor='white',
+            margin=dict(l=100, r=50, b=100, t=30),
+            xaxis_showgrid=False,
+            yaxis_showgrid=False
+        )
+
+    def add_heatmap(self, z, x_labels=None, y_labels=None, annotations=True):
+        """
+        Add heatmap data with automatic labels
+        :param z: 2D array of values
+        :param x_labels: List/array of labels for x-axis
+        :param y_labels: List/array of labels for y-axis
+        :param annotations: Show text annotations in cells
+        """
+        if len(np.array(z).shape) != 2:
+            raise ValueError("Heatmap data must be 2D")
+
+        x_labels = x_labels if x_labels is not None else [str(i) for i in range(len(z[0]))]
+        y_labels = y_labels if y_labels is not None else [str(i) for i in range(len(z))]
+
+        trace = go.Heatmap(
+            z=z,
+            x=x_labels,
+            y=y_labels,
+            colorscale=self.colorscale,
+            showscale=self.show_scale,
+            text=z if annotations else None,
+            texttemplate="%{z}" if annotations else None,
+            hoverinfo="x+y+z"
+        )
+        
+        self.fig.add_trace(trace)
+        return self
+
+    def add_confusion_matrix(self, cm, class_labels=None):
+        """
+        Specialized method for confusion matrices
+        :param cm: 2D confusion matrix array
+        :param class_labels: List of class names (optional)
+        """
+        class_labels = class_labels if class_labels else [f"Class {i}" for i in range(len(cm))]
+        return self.add_heatmap(cm, class_labels, class_labels)

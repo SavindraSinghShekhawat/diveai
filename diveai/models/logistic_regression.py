@@ -1,3 +1,110 @@
+import numpy as np
+
+class LogisticRegression:
+    def __init__(self, learning_rate=0.01, iterations=1000, threshold=0.5,
+                 regularization=None, lambda_=0.1, l1_ratio=0.5):
+        """
+        Enhanced Logistic Regression model with regularization support
+        :param learning_rate: Step size for gradient descent
+        :param iterations: Number of gradient descent iterations
+        :param threshold: Decision boundary threshold (0-1)
+        :param regularization: Type of regularization ('l1', 'l2', 'elastic_net')
+        :param lambda_: Regularization strength
+        :param l1_ratio: Mixing parameter for Elastic Net (0-1)
+        """
+        self.learning_rate = learning_rate
+        self.iterations = iterations
+        self.threshold = threshold
+        self.regularization = regularization
+        self.lambda_ = lambda_
+        self.l1_ratio = l1_ratio
+        self.weights = None
+        self.bias = None
+        
+    def _sigmoid(self, z):
+        """Numerically stable sigmoid function with clipping"""
+        z = np.clip(z, -500, 500)  # Prevent overflow
+        return 1 / (1 + np.exp(-z))
+    
+    def fit(self, X, y):
+        """
+        Train model with gradient descent and regularization
+        """
+        m, n = X.shape  # m = samples, n = features
+        self.weights = np.zeros((n, 1))  # Proper shape for features
+        self.bias = 0
+        
+        y = y.reshape(-1, 1)  # Ensure proper shape
+        
+        # Initialize logging
+        metrics = {'weights': [], 'bias': [], 'cost': []}
+        
+        for _ in range(self.iterations):
+            # Compute predictions and gradient
+            z = X @ self.weights + self.bias
+            y_pred = self._sigmoid(z)
+            
+            # Calculate gradients
+            error = y_pred - y
+            dw = (1/m) * X.T @ error  # Logistic regression gradient
+            db = (1/m) * np.sum(error)
+            
+            # Add regularization gradients
+            if self.regularization == 'l2':
+                dw += (self.lambda_/m) * self.weights
+            elif self.regularization == 'l1':
+                dw += (self.lambda_/m) * np.sign(self.weights)
+            elif self.regularization == 'elastic_net':
+                l1_grad = self.lambda_ * self.l1_ratio * np.sign(self.weights)
+                l2_grad = self.lambda_ * (1 - self.l1_ratio) * self.weights
+                dw += (l1_grad + l2_grad)/m
+            
+            # Update parameters
+            self.weights -= self.learning_rate * dw
+            self.bias -= self.learning_rate * db
+            
+            # Compute cost with regularization
+            epsilon = 1e-15  # Numerical stability
+            y_pred_clipped = np.clip(y_pred, epsilon, 1 - epsilon)
+            cross_entropy = -np.mean(y * np.log(y_pred_clipped) + (1 - y) * np.log(1 - y_pred_clipped))
+            reg_cost = self._regularization_cost(m, n)
+            total_cost = cross_entropy + reg_cost
+            
+            # Log metrics
+            metrics['weights'].append(self.weights.copy())
+            metrics['bias'].append(self.bias)
+            metrics['cost'].append(total_cost)
+        
+        return metrics
+    
+    def _regularization_cost(self, m, n):
+        """Calculate regularization term (identical to linear regression version)"""
+        if not self.regularization:
+            return 0
+            
+        l1_term = np.sum(np.abs(self.weights)) 
+        l2_term = np.sum(self.weights**2)
+        
+        if self.regularization == 'l1':
+            return (self.lambda_/m) * l1_term
+        elif self.regularization == 'l2':
+            return (self.lambda_/(2*m)) * l2_term
+        elif self.regularization == 'elastic_net':
+            return (self.lambda_/m) * (self.l1_ratio * l1_term + 
+                                      (1 - self.l1_ratio)/2 * l2_term)
+        return 0
+    
+    def predict_proba(self, X):
+        """Return predicted probabilities"""
+        return self._sigmoid(X @ self.weights + self.bias)
+    
+    def predict(self, X):
+        """Return class predictions using threshold"""
+        probabilities = self.predict_proba(X)
+        return (probabilities >= self.threshold).astype(int)
+
+
+
 # import numpy as np
 # from diveai.visualization import PlotBuilder
 
