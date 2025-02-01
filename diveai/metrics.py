@@ -32,25 +32,56 @@ def accuracy_score(y_true, y_pred):
     return correct / total
 
 def accuracy_score(y_true, y_pred):
+    """
+    Calculate accuracy score.
+    :param y_true: True target values.
+    :param y_pred: Predicted target values.
+    :return: Accuracy score.
+    """
     correct = np.sum(y_true == y_pred)
     return correct / len(y_true)
 
 def precision_score(y_true, y_pred):
+    """
+    Calculate precision score.
+    :param y_true: True target values.
+    :param y_pred: Predicted target values.
+    :return: Precision score.
+    """
     tp = np.sum((y_true == 1) & (y_pred == 1))
     fp = np.sum((y_true == 0) & (y_pred == 1))
     return tp / (tp + fp) if (tp + fp) > 0 else 0
 
 def recall_score(y_true, y_pred):
+    """
+    Calculate recall score.
+    :param y_true: True target values.
+    :param y_pred: Predicted target values.
+    :return: Recall score.
+    """
     tp = np.sum((y_true == 1) & (y_pred == 1))
     fn = np.sum((y_true == 1) & (y_pred == 0))
     return tp / (tp + fn) if (tp + fn) > 0 else 0
 
 def f1_score(y_true, y_pred):
+    """
+    Calculate F1 score.
+    :param y_true: True target values.
+    :param y_pred: Predicted target values.
+    :return: F1 score.
+    """
     p = precision_score(y_true, y_pred)
     r = recall_score(y_true, y_pred)
     return 2 * (p * r) / (p + r) if (p + r) > 0 else 0
 
 def roc_auc_score(y_true, y_proba, n_thresholds=100):
+    """
+    Calculate Area Under the Receiver Operating Characteristic Curve (ROC AUC).
+    :param y_true: True target values.
+    :param y_proba: Predicted probabilities of the positive class.
+    :param n_thresholds: Number of thresholds to use for ROC curve.
+    :return: ROC AUC score.
+    """
     # Sort probabilities and corresponding true labels
     indices = np.argsort(y_proba)[::-1]
     y_proba_sorted = y_proba[indices]
