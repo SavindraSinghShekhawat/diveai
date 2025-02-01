@@ -24,8 +24,6 @@ class PlotBuilder:
     """
     A versatile Plotly-based plotting class that dynamically determines whether to use 2D or 3D based on the first plot.
     """
-    color_generator = cycle(['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan'])
-
     def __init__(self, x_label=None, y_label=None, z_label=None, title=None):
         """
         Initializes the plot with optional axis labels and title.
@@ -41,8 +39,10 @@ class PlotBuilder:
         self.is_3d = True if z_label else None  # Will be determined dynamically
         self.fig = go.Figure()
         self.set_labels(x_label=x_label, y_label=y_label, z_label=z_label, title=title)
+        self.color_generator = cycle(['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan'])
+
     
-    def add_plot(self, x, y, z=None, plot_type="line", color=None, label=None, opacity=1, size=5, colorscale="Reds", marker_symbol=None):
+    def add_plot(self, x, y, z=None, plot_type="line", color=None, label=None, opacity=1, size=5, colorscale="Reds", marker_symbol=None, show_scale=True):
         """
         Adds a 2D or 3D plot to the figure based on the provided data.
         :param x: x-coordinates.
@@ -63,7 +63,7 @@ class PlotBuilder:
             if plot_type == "bar":
                 raise ValueError("3D bar plots are not supported in Plotly.")
             if plot_type == 'surface':
-                trace = go.Surface(x=x, y=y, z=z, name=label, colorscale=colorscale, opacity=opacity)
+                trace = go.Surface(x=x, y=y, z=z, name=label, colorscale=colorscale, opacity=opacity, showscale=show_scale, showlegend=True)
             else:
                 trace = go.Scatter3d(x=x, y=y, z=z, mode='lines' if plot_type == "line" else 'markers',
                                  name=label, line=dict(color=color) if plot_type == "line" else dict(),
@@ -159,7 +159,6 @@ class HeatmapPlotBuilder(PlotBuilder):
         self.fig.update_layout(
             yaxis_autorange='reversed',
             plot_bgcolor='white',
-            margin=dict(l=100, r=50, b=100, t=30),
             xaxis_showgrid=False,
             yaxis_showgrid=False
         )
